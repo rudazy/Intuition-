@@ -14,11 +14,11 @@ export default function Home() {
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
             Connect AI Agents to
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-              Intuition's Trust Network
+              Intuition Trust Network
             </span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Enable Claude, ChatGPT, and autonomous agents to query trust scores, 
+            Enable ChatGPT, Claude and autonomous agents to query trust scores, 
             verify credentials, and discover experts using the Model Context Protocol.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
