@@ -139,7 +139,7 @@ export default function Home() {
             </div>
             <h3 className="text-xl font-semibold mb-2">Query Data</h3>
             <p className="text-gray-600">
-              AI agents can now access Intuition's trust network directly.
+              AI agents can now access Intuition trust network directly.
             </p>
           </div>
           <div className="text-center">
@@ -184,7 +184,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-gray-600 mb-4 md:mb-0">
-              © 2025 Intuition MCP Server. Built for the Intuition Ecosystem Grant.
+              © 2025 Intuition MCP Server. Built for the Intuition Ecosystem.
             </div>
             <div className="flex space-x-6">
               <Link href="https://portal.intuition.systems/" target="_blank" className="text-gray-600 hover:text-indigo-600">
