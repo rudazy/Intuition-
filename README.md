@@ -2,7 +2,7 @@
 
 An MCP (Model Context Protocol) server that enables AI agents like Claude, ChatGPT, and autonomous agents to query trust scores, attestations, and reputation data from Intuition's mainnet.
 
-## 🚀 Features
+ Features
 
 - **ENS Name Support**: Search by ENS names (vitalik.eth) or Ethereum addresses
 - **MCP Server Integration**: Connect AI agents directly to Intuition's attestation system
@@ -14,7 +14,7 @@ An MCP (Model Context Protocol) server that enables AI agents like Claude, ChatG
 - **Real-time Data**: Direct connection to Intuition Mainnet
 - **Instant ENS Resolution**: Automatic ENS → address resolution using viem
 
-## 🛠️ Tech Stack
+ Tech Stack
 
 - **Next.js 14+** - App Router for API and dashboard
 - **TypeScript** - Type safety throughout
@@ -24,13 +24,13 @@ An MCP (Model Context Protocol) server that enables AI agents like Claude, ChatG
 - **Tailwind CSS + shadcn/ui** - Beautiful UI components
 - **Vercel** - Deployment ready
 
-## 📋 Prerequisites
+ Prerequisites
 
 - Node.js 18+
 - npm or yarn
 - Git
 
-## 🔧 Installation
+ Installation
 
 1. **Clone the repository**
 ```bash
@@ -57,7 +57,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 🌐 Intuition Mainnet Configuration
+ Intuition Mainnet Configuration
 
 - **Chain ID**: 1155
 - **RPC URL**: https://rpc.intuition.systems/http
@@ -65,7 +65,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - **GraphQL API**: https://graph.intuition.systems/graphql
 - **Currency**: TRUST
 
-## 🤖 MCP Server Usage
+ MCP Server Usage
 
 ### Connect to Claude Desktop
 
@@ -88,7 +88,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 3. **verifyCredential(address, claim)** - Verify if address has specific attestation
 4. **findTrustedExperts(topic)** - Find highly trusted addresses in a topic
 
-## 📚 API Endpoints
+ API Endpoints
 
 ### Trust Score API
 Get trust scores for Ethereum addresses or ENS names:
@@ -166,7 +166,7 @@ When querying with an ENS name, the response includes:
 }
 ```
 
-## 🏗️ Project Structure
+ Project Structure
 ```
 /app
   /api
@@ -182,7 +182,7 @@ When querying with an ENS name, the response includes:
   /ui                    # shadcn components
 ```
 
-## 🚀 Deployment
+ Deployment
 
 ### Deploy to Vercel
 ```bash
@@ -192,32 +192,32 @@ vercel --prod
 
 Or connect your GitHub repo to Vercel for automatic deployments.
 
-## 📖 Documentation
+ Documentation
 
 Visit `/docs` after running the dev server for complete API documentation and examples.
 
-## 🎯 Use Cases
+ Use Cases
 
 - **AI Hiring Assistant** - Verify candidate credentials via attestations
 - **Trust-Gated Content** - Restrict access based on trust scores
 - **Reputation Systems** - Build reputation tracking for your app
 - **Expert Discovery** - Find trusted voices in specific domains
 
-## 🤝 Contributing
+ Contributing
 
 This project is for the Intuition Ecosystem Grant. Contributions welcome!
 
-## 📄 License
+ License
 
 MIT License
 
-## 🔗 Links
+ Links
 
 - [Intuition Portal](https://portal.intuition.systems/)
 - [Intuition Docs](https://docs.intuition.systems/)
 - [MCP Documentation](https://modelcontextprotocol.io/)
 
-## 📧 Contact
+ Contact
 
 - GitHub: [@rudazy](https://github.com/rudazy)
 - Project: [Intuition MCP Server](https://github.com/rudazy/Intuition-)
