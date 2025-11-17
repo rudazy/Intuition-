@@ -4,6 +4,7 @@ An MCP (Model Context Protocol) server that enables AI agents like Claude, ChatG
 
 ## 🚀 Features
 
+- **ENS Name Support**: Search by ENS names (vitalik.eth) or Ethereum addresses
 - **MCP Server Integration**: Connect AI agents directly to Intuition's attestation system
 - **Trust Score Calculation**: Aggregate trust scores based on attestation patterns
 - **Attestation Queries**: Filter and search attestations with flexible parameters
@@ -11,6 +12,7 @@ An MCP (Model Context Protocol) server that enables AI agents like Claude, ChatG
 - **Expert Discovery**: Find highly trusted addresses in specific topics
 - **Developer Dashboard**: Interactive API playground and documentation
 - **Real-time Data**: Direct connection to Intuition Mainnet
+- **Instant ENS Resolution**: Automatic ENS → address resolution using viem
 
 ## 🛠️ Tech Stack
 
@@ -18,6 +20,7 @@ An MCP (Model Context Protocol) server that enables AI agents like Claude, ChatG
 - **TypeScript** - Type safety throughout
 - **MCP SDK** - AI agent integration
 - **GraphQL** - Intuition API queries
+- **viem** - ENS resolution and Ethereum interactions
 - **Tailwind CSS + shadcn/ui** - Beautiful UI components
 - **Vercel** - Deployment ready
 
@@ -87,9 +90,81 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 ## 📚 API Endpoints
 
-- `GET /api/trust-score?address=0x...` - Get trust score
-- `GET /api/attestations?address=0x...` - Get attestations
-- `POST /api/mcp` - MCP server endpoint
+### Trust Score API
+Get trust scores for Ethereum addresses or ENS names:
+
+```bash
+# Query by Ethereum address
+curl "https://yourdomain.com/api/trust-score?address=0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+
+# Query by ENS name
+curl "https://yourdomain.com/api/trust-score?address=vitalik.eth"
+
+# Alternative ENS parameter
+curl "https://yourdomain.com/api/trust-score?ens=nick.eth"
+```
+
+### Other Endpoints
+- `GET /api/attestations?subject=0x...` - Get attestations (also supports ENS)
+- `POST /api/mcp` - MCP server endpoint for AI agents
+
+### ENS Support
+All API endpoints that accept Ethereum addresses also support ENS names:
+- `vitalik.eth`
+- `nick.eth`
+- Any registered ENS name on Ethereum mainnet
+
+The API automatically resolves ENS names to addresses and includes both in the response.
+
+## 🔍 ENS Integration Details
+
+The Intuition MCP Server includes native ENS (Ethereum Name Service) support, making it easier to work with human-readable names instead of Ethereum addresses.
+
+### How It Works
+
+1. **Automatic Detection**: The system automatically detects whether you've entered an ENS name or an Ethereum address
+2. **Real-time Resolution**: ENS names are resolved to addresses using viem on Ethereum mainnet
+3. **Response Enrichment**: API responses include both the resolved address and the original ENS name
+4. **Validation**: Input validation provides immediate feedback on address/ENS format
+
+### Supported Input Formats
+
+```typescript
+// Ethereum addresses
+"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+
+// ENS names
+"vitalik.eth"
+"nick.eth"
+"yourname.eth"
+
+// Any registered ENS domain
+```
+
+### Dashboard Features
+
+The interactive dashboard (`/dashboard`) includes:
+- Real-time input validation (shows if ENS or address detected)
+- ENS resolution status display
+- Quick-access example buttons (vitalik.eth, nick.eth, etc.)
+- Helpful UI hints for supported input formats
+
+### API Response Format
+
+When querying with an ENS name, the response includes:
+
+```json
+{
+  "success": true,
+  "data": {
+    "address": "0x...",
+    "ensName": "vitalik.eth",
+    "resolvedFrom": "ens",
+    "score": 0.85,
+    "breakdown": { ... }
+  }
+}
+```
 
 ## 🏗️ Project Structure
 ```

@@ -1,44 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { intuitionClient } from '@/lib/intuition/client';
+import { resolveAddressOrENS } from '@/lib/intuition/ens';
 
 /**
  * GET /api/trust-score
  *
- * Get trust score for an Ethereum address
+ * Get trust score for an Ethereum address or ENS name
  *
  * Query parameters:
- * - address: Ethereum address (0x...)
+ * - address: Ethereum address (0x...) or ENS name (vitalik.eth)
+ * - ens: Alternative parameter for ENS name (optional)
  *
- * Example: /api/trust-score?address=0x1234567890123456789012345678901234567890
+ * Examples:
+ * - /api/trust-score?address=0x1234567890123456789012345678901234567890
+ * - /api/trust-score?address=vitalik.eth
+ * - /api/trust-score?ens=nick.eth
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const address = searchParams.get('address');
+    const input = searchParams.get('address') || searchParams.get('ens');
 
-    // Validate address parameter
-    if (!address) {
+    // Validate input parameter
+    if (!input) {
       return NextResponse.json(
-        { error: 'Missing required parameter: address' },
+        { error: 'Missing required parameter: address or ens' },
         { status: 400 }
       );
     }
 
-    // Validate Ethereum address format
-    const addressRegex = /^0x[a-fA-F0-9]{40}$/;
-    if (!addressRegex.test(address)) {
+    // Resolve ENS or validate address
+    const resolution = await resolveAddressOrENS(input);
+
+    if (!resolution.address) {
       return NextResponse.json(
-        { error: 'Invalid Ethereum address format' },
+        { error: resolution.error || 'Invalid address or ENS name' },
         { status: 400 }
       );
     }
 
-    // Fetch trust score from Intuition
-    const trustScore = await intuitionClient.getTrustScore(address);
+    // Fetch trust score from Intuition using resolved address
+    const trustScore = await intuitionClient.getTrustScore(resolution.address);
 
     return NextResponse.json({
       success: true,
-      data: trustScore,
+      data: {
+        ...trustScore,
+        address: resolution.address,
+        ensName: resolution.ensName || null,
+        resolvedFrom: resolution.isENS ? 'ens' : 'address',
+      },
     });
   } catch (error) {
     console.error('Error fetching trust score:', error);

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatPercentage, truncateAddress, formatTimestamp, getScoreColor, copyToClipboard } from '@/lib/utils';
+import { resolveAddressOrENS } from '@/lib/intuition/ens';
 
 export default function DashboardPage() {
   const [address, setAddress] = useState('');
@@ -15,19 +16,39 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resolvedAddress, setResolvedAddress] = useState('');
+  const [ensName, setEnsName] = useState('');
+  const [isResolving, setIsResolving] = useState(false);
 
   const handleGetTrustScore = async () => {
     if (!address) {
-      setError('Please enter an address');
+      setError('Please enter an address or ENS name');
       return;
     }
 
     setLoading(true);
+    setIsResolving(true);
     setError(null);
     setResult(null);
+    setResolvedAddress('');
+    setEnsName('');
 
     try {
-      const response = await fetch(`/api/trust-score?address=${address}`);
+      // Resolve ENS or validate address
+      const resolution = await resolveAddressOrENS(address);
+      setIsResolving(false);
+
+      if (!resolution.address) {
+        throw new Error(resolution.error || 'Invalid address or ENS name');
+      }
+
+      setResolvedAddress(resolution.address);
+      if (resolution.isENS && resolution.ensName) {
+        setEnsName(resolution.ensName);
+      }
+
+      // Fetch trust score with resolved address
+      const response = await fetch(`/api/trust-score?address=${resolution.address}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -39,21 +60,39 @@ export default function DashboardPage() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      setIsResolving(false);
     }
   };
 
   const handleGetAttestations = async () => {
     if (!address) {
-      setError('Please enter an address');
+      setError('Please enter an address or ENS name');
       return;
     }
 
     setLoading(true);
+    setIsResolving(true);
     setError(null);
     setResult(null);
+    setResolvedAddress('');
+    setEnsName('');
 
     try {
-      const response = await fetch(`/api/attestations?subject=${address}&limit=10`);
+      // Resolve ENS or validate address
+      const resolution = await resolveAddressOrENS(address);
+      setIsResolving(false);
+
+      if (!resolution.address) {
+        throw new Error(resolution.error || 'Invalid address or ENS name');
+      }
+
+      setResolvedAddress(resolution.address);
+      if (resolution.isENS && resolution.ensName) {
+        setEnsName(resolution.ensName);
+      }
+
+      // Fetch attestations with resolved address
+      const response = await fetch(`/api/attestations?subject=${resolution.address}&limit=10`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -65,26 +104,44 @@ export default function DashboardPage() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      setIsResolving(false);
     }
   };
 
   const handleVerifyCredential = async () => {
     if (!address || !claim) {
-      setError('Please enter both address and claim');
+      setError('Please enter both address/ENS and claim');
       return;
     }
 
     setLoading(true);
+    setIsResolving(true);
     setError(null);
     setResult(null);
+    setResolvedAddress('');
+    setEnsName('');
 
     try {
+      // Resolve ENS or validate address
+      const resolution = await resolveAddressOrENS(address);
+      setIsResolving(false);
+
+      if (!resolution.address) {
+        throw new Error(resolution.error || 'Invalid address or ENS name');
+      }
+
+      setResolvedAddress(resolution.address);
+      if (resolution.isENS && resolution.ensName) {
+        setEnsName(resolution.ensName);
+      }
+
+      // Verify credential with resolved address
       const response = await fetch('/api/mcp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tool: 'verifyCredential',
-          params: { address, claim },
+          params: { address: resolution.address, claim },
         }),
       });
 
@@ -99,6 +156,7 @@ export default function DashboardPage() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      setIsResolving(false);
     }
   };
 
@@ -193,53 +251,130 @@ export default function DashboardPage() {
                   <TabsContent value="trust-score" className="space-y-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">
-                        Ethereum Address
+                        Ethereum Address or ENS Name
                       </label>
                       <Input
-                        placeholder="0x1234567890123456789012345678901234567890"
+                        placeholder="vitalik.eth or 0x..."
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                       />
+                      {address && (
+                        <div className="mt-2 text-xs">
+                          {address.includes('.') ? (
+                            <span className="text-blue-600">🔍 ENS name detected</span>
+                          ) : address.startsWith('0x') && address.length === 42 ? (
+                            <span className="text-green-600">✓ Ethereum address detected</span>
+                          ) : address.startsWith('0x') ? (
+                            <span className="text-yellow-600">⚠️ Address incomplete</span>
+                          ) : (
+                            <span className="text-red-600">⚠️ Invalid format</span>
+                          )}
+                        </div>
+                      )}
+                      {ensName && resolvedAddress && (
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
+                          ✓ Resolved {ensName} → {truncateAddress(resolvedAddress)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setAddress('vitalik.eth')}
+                        className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded border"
+                      >
+                        vitalik.eth
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAddress('nick.eth')}
+                        className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded border"
+                      >
+                        nick.eth
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAddress('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb')}
+                        className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded border"
+                      >
+                        0x Address
+                      </button>
                     </div>
                     <Button
                       onClick={handleGetTrustScore}
                       disabled={loading}
                       className="w-full"
                     >
-                      {loading ? 'Loading...' : 'Get Trust Score'}
+                      {loading ? (isResolving ? 'Resolving...' : 'Loading...') : 'Get Trust Score'}
                     </Button>
                   </TabsContent>
 
                   <TabsContent value="attestations" className="space-y-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">
-                        Subject Address
+                        Subject Address or ENS Name
                       </label>
                       <Input
-                        placeholder="0x1234567890123456789012345678901234567890"
+                        placeholder="vitalik.eth or 0x..."
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                       />
+                      {address && (
+                        <div className="mt-2 text-xs">
+                          {address.includes('.') ? (
+                            <span className="text-blue-600">🔍 ENS name detected</span>
+                          ) : address.startsWith('0x') && address.length === 42 ? (
+                            <span className="text-green-600">✓ Ethereum address detected</span>
+                          ) : address.startsWith('0x') ? (
+                            <span className="text-yellow-600">⚠️ Address incomplete</span>
+                          ) : (
+                            <span className="text-red-600">⚠️ Invalid format</span>
+                          )}
+                        </div>
+                      )}
+                      {ensName && resolvedAddress && (
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
+                          ✓ Resolved {ensName} → {truncateAddress(resolvedAddress)}
+                        </div>
+                      )}
                     </div>
                     <Button
                       onClick={handleGetAttestations}
                       disabled={loading}
                       className="w-full"
                     >
-                      {loading ? 'Loading...' : 'Get Attestations'}
+                      {loading ? (isResolving ? 'Resolving...' : 'Loading...') : 'Get Attestations'}
                     </Button>
                   </TabsContent>
 
                   <TabsContent value="verify" className="space-y-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">
-                        Address
+                        Address or ENS Name
                       </label>
                       <Input
-                        placeholder="0x1234567890123456789012345678901234567890"
+                        placeholder="vitalik.eth or 0x..."
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                       />
+                      {address && (
+                        <div className="mt-2 text-xs">
+                          {address.includes('.') ? (
+                            <span className="text-blue-600">🔍 ENS name detected</span>
+                          ) : address.startsWith('0x') && address.length === 42 ? (
+                            <span className="text-green-600">✓ Ethereum address detected</span>
+                          ) : address.startsWith('0x') ? (
+                            <span className="text-yellow-600">⚠️ Address incomplete</span>
+                          ) : (
+                            <span className="text-red-600">⚠️ Invalid format</span>
+                          )}
+                        </div>
+                      )}
+                      {ensName && resolvedAddress && (
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
+                          ✓ Resolved {ensName} → {truncateAddress(resolvedAddress)}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">
@@ -256,7 +391,7 @@ export default function DashboardPage() {
                       disabled={loading}
                       className="w-full"
                     >
-                      {loading ? 'Loading...' : 'Verify Credential'}
+                      {loading ? (isResolving ? 'Resolving...' : 'Loading...') : 'Verify Credential'}
                     </Button>
                   </TabsContent>
 
@@ -288,9 +423,23 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Example Queries</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="space-y-3 text-sm">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                  <p className="font-medium mb-2 text-blue-900">💡 You can search by:</p>
+                  <ul className="space-y-1 text-xs text-blue-800">
+                    <li>• ENS name: <code className="bg-white px-1 py-0.5 rounded">vitalik.eth</code></li>
+                    <li>• Ethereum address: <code className="bg-white px-1 py-0.5 rounded">0x1234...5678</code></li>
+                  </ul>
+                </div>
                 <div>
-                  <p className="font-medium">Trust Score:</p>
+                  <p className="font-medium">ENS Examples:</p>
+                  <div className="flex gap-2 flex-wrap mt-1">
+                    <code className="text-xs bg-slate-100 p-1 rounded">vitalik.eth</code>
+                    <code className="text-xs bg-slate-100 p-1 rounded">nick.eth</code>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-medium">Address Example:</p>
                   <code className="text-xs bg-slate-100 p-1 rounded">
                     0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
                   </code>

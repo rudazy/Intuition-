@@ -14,7 +14,7 @@ export default function Home() {
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
             Connect AI Agents to
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-              Intuition's Trust Network
+              Intuition Trust Network
             </span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
@@ -181,23 +181,26 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-gray-600 mb-4 md:mb-0">
-              © 2025 Intuition MCP Server. Built for the Intuition Ecosystem Grant.
+       <div className="text-gray-600 mb-4 md:mb-0">
+              © 2025 Intuition MCP Server. Open source AI agent integration.
             </div>
             <div className="flex space-x-6">
+              <Link href="https://x.com/IntuitASystem" target="_blank" className="text-gray-600 hover:text-indigo-600 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                Twitter
+              </Link>
               <Link href="https://portal.intuition.systems/" target="_blank" className="text-gray-600 hover:text-indigo-600">
-                Intuition Portal
+                Portal
               </Link>
               <Link href="https://docs.intuition.systems/" target="_blank" className="text-gray-600 hover:text-indigo-600">
-                Intuition Docs
+                Docs
               </Link>
               <Link href="https://github.com/rudazy/Intuition-" target="_blank" className="text-gray-600 hover:text-indigo-600">
                 GitHub
               </Link>
             </div>
-          </div>
         </div>
       </footer>
     </div>
