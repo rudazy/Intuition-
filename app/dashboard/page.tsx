@@ -234,7 +234,12 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle>Query Tools</CardTitle>
                 <CardDescription>
-                  Try different MCP tools with live data
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-semibold">
+                      ⚡ Testnet Data
+                    </span>
+                    <span className="text-gray-600">Connected to Intuition Testnet</span>
+                  </div>
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -249,15 +254,17 @@ export default function DashboardPage() {
                   </TabsList>
 
                   <TabsContent value="trust-score" className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Ethereum Address or ENS Name
-                      </label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Ethereum Address or ENS</label>
                       <Input
-                        placeholder="vitalik.eth or 0x..."
+                        type="text"
+                        placeholder="0x... or vitalik.eth"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                       />
+                      <div className="text-xs text-gray-500">
+                        💡 <strong>Note:</strong> ENS names resolve to mainnet addresses, but trust scores are calculated from <strong>testnet attestations</strong>
+                      </div>
                       {address && (
                         <div className="mt-2 text-xs">
                           {address.includes('.') ? (
@@ -277,36 +284,32 @@ export default function DashboardPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => setAddress('vitalik.eth')}
-                        className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded border"
-                      >
-                        vitalik.eth
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAddress('nick.eth')}
-                        className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded border"
-                      >
-                        nick.eth
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAddress('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb')}
-                        className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded border"
-                      >
-                        0x Address
-                      </button>
-                    </div>
-                    <Button
-                      onClick={handleGetTrustScore}
-                      disabled={loading}
-                      className="w-full"
-                    >
+
+                    <Button onClick={handleGetTrustScore} disabled={loading} className="w-full">
                       {loading ? (isResolving ? 'Resolving...' : 'Loading...') : 'Get Trust Score'}
                     </Button>
+
+                    <div className="border-t pt-4 mt-4">
+                      <p className="text-sm font-medium mb-2">Try These Testnet Examples:</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        <button
+                          onClick={() => setAddress('0x6A8055bA7a0f54D1b145F927E517522B235963F6')}
+                          className="text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border"
+                          type="button"
+                        >
+                          <div className="font-mono text-xs">0x6A80...63F6</div>
+                          <div className="text-xs text-gray-500">Active testnet address</div>
+                        </button>
+                        <button
+                          onClick={() => setAddress('vitalik.eth')}
+                          className="text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border"
+                          type="button"
+                        >
+                          <div className="font-mono text-xs">vitalik.eth</div>
+                          <div className="text-xs text-gray-500">ENS resolution demo (testnet data)</div>
+                        </button>
+                      </div>
+                    </div>
                   </TabsContent>
 
                   <TabsContent value="attestations" className="space-y-4">

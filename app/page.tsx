@@ -103,8 +103,8 @@ export default function Home() {
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-12 text-white">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-4xl font-bold mb-2">Chain 1155</div>
-              <div className="text-indigo-200">Intuition Mainnet</div>
+              <div className="text-4xl font-bold mb-2">Testnet</div>
+              <div className="text-indigo-200">Live Attestation Data</div>
             </div>
             <div>
               <div className="text-4xl font-bold mb-2">4 Tools</div>
