@@ -21,74 +21,33 @@ export class IntuitionClient {
   }
 
   /**
-   * Query attestations (triples) from Intuition graph with filters
+   * Query attestations (triples) from Intuition graph
    */
   async getAttestations(filters: AttestationFilters = {}): Promise<Attestation[]> {
-    // Build where clause
-    const whereConditions: any = {};
-
-    if (filters.creator) {
-      whereConditions.creator_id = { _eq: filters.creator };
-    }
-
-    if (filters.subject) {
-      whereConditions.subject = {
-        wallet_id: { _ilike: `%${filters.subject}%` }
-      };
-    }
-
-    if (filters.predicate) {
-      whereConditions.predicate = {
-        _or: [
-          { label: { _ilike: `%${filters.predicate}%` } },
-          { data: { _ilike: `%${filters.predicate}%` } }
-        ]
-      };
-    }
-
-    if (filters.object) {
-      whereConditions.object = {
-        _or: [
-          { label: { _ilike: `%${filters.object}%` } },
-          { data: { _ilike: `%${filters.object}%` } }
-        ]
-      };
-    }
-
     const query = `
-      query GetTriples($where: triples_bool_exp, $limit: Int, $offset: Int) {
-        triples(
-          where: $where
-          limit: $limit
-          offset: $offset
-          order_by: { created_at: desc }
-        ) {
-          term_id
-          creator_id
+      query GetTriples($limit: Int) {
+        triples(limit: $limit) {
           subject_id
           predicate_id
           object_id
+          term_id
+          creator_id
           created_at
-          block_number
-          transaction_hash
-          creator {
-            id
-            label
-          }
           subject {
-            wallet_id
-            label
             data
+            label
+            wallet_id
           }
           predicate {
-            wallet_id
-            label
             data
+            label
           }
           object {
-            wallet_id
-            label
             data
+            label
+          }
+          term {
+            id
           }
         }
       }
@@ -96,33 +55,26 @@ export class IntuitionClient {
 
     try {
       const data = await this.client.request<{ triples: any[] }>(query, {
-        where: Object.keys(whereConditions).length > 0 ? whereConditions : undefined,
-        limit: filters.limit || 100,
-        offset: filters.offset || 0
+        limit: filters.limit || 100
       });
 
-      // Transform to our Attestation type
-      return (data.triples || []).map(triple => {
-        const timestamp = new Date(triple.created_at).getTime() / 1000;
-
-        return {
-          id: triple.term_id,
-          creator: triple.creator_id,
-          subject: triple.subject?.wallet_id || triple.subject?.label || '',
-          predicate: triple.predicate?.label || triple.predicate?.data || '',
-          object: triple.object?.label || triple.object?.wallet_id || triple.object?.data || '',
-          timestamp: timestamp,
-          confidence: 0.85, // Default confidence - could be calculated from vault data
-          stake: triple.term_id, // Using term_id as stake reference
-          metadata: {
-            subject_label: triple.subject?.label,
-            predicate_label: triple.predicate?.label,
-            object_label: triple.object?.label,
-            block_number: triple.block_number,
-            transaction_hash: triple.transaction_hash
-          }
-        };
-      });
+      return (data.triples || []).map(triple => ({
+        id: triple.term_id || triple.term?.id || '',
+        creator: triple.creator_id || '',
+        subject: triple.subject?.data || triple.subject?.label || triple.subject?.wallet_id || triple.subject_id || '',
+        predicate: triple.predicate?.data || triple.predicate?.label || triple.predicate_id || '',
+        object: triple.object?.data || triple.object?.label || triple.object_id || '',
+        timestamp: new Date(triple.created_at).getTime(),
+        confidence: 0.8,
+        stake: triple.term?.id || triple.term_id || '0',
+        metadata: {
+          subject_id: triple.subject_id,
+          predicate_id: triple.predicate_id,
+          object_id: triple.object_id,
+          creator_id: triple.creator_id,
+          term_id: triple.term_id
+        }
+      }));
     } catch (error) {
       console.error('Error fetching attestations:', error);
       throw new Error(`Failed to fetch attestations: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -130,282 +82,136 @@ export class IntuitionClient {
   }
 
   /**
-   * Calculate trust score for an Ethereum address based on attestations
+   * Calculate trust score for an address
    */
   async getTrustScore(address: string): Promise<TrustScore> {
-    // Normalize address
-    const normalizedAddress = address.toLowerCase();
+    const attestations = await this.getAttestations({ limit: 1000 });
+    
+    // Search for address in subject, object (case-insensitive, partial match)
+    const searchTerm = address.toLowerCase();
+    const relevantAttestations = attestations.filter(a => {
+      const subjectMatch = a.subject.toLowerCase().includes(searchTerm) || 
+                          a.creator.toLowerCase().includes(searchTerm);
+      const objectMatch = a.object.toLowerCase().includes(searchTerm);
+      return subjectMatch || objectMatch;
+    });
 
-    // Query for attestations where the address is the subject
-    const query = `
-      query GetAddressTrustScore($address: String!) {
-        triples(
-          where: {
-            subject: {
-              wallet_id: { _ilike: $address }
-            }
-          }
-          limit: 1000
-          order_by: { created_at: desc }
-        ) {
-          term_id
-          creator_id
-          created_at
-          predicate {
-            label
-            data
-          }
-          object {
-            label
-            data
-          }
-        }
-      }
-    `;
-
-    try {
-      const data = await this.client.request<{ triples: any[] }>(query, {
-        address: `%${normalizedAddress}%`
-      });
-
-      const attestations = data.triples || [];
-
-      if (attestations.length === 0) {
-        return {
-          address,
-          score: 0,
-          attestationCount: 0,
-          positiveAttestations: 0,
-          negativeAttestations: 0,
-          lastUpdated: Date.now(),
-          breakdown: {
-            credibility: 0,
-            expertise: 0,
-            reliability: 0,
-            reputation: 0
-          }
-        };
-      }
-
-      // Analyze attestation types to calculate scores
-      const positiveKeywords = ['expert', 'trusted', 'verified', 'credible', 'reliable'];
-      const negativeKeywords = ['scam', 'fraud', 'untrusted', 'suspicious'];
-
-      let positiveCount = 0;
-      let negativeCount = 0;
-      let credibilitySum = 0;
-      let expertiseSum = 0;
-      let reliabilitySum = 0;
-
-      attestations.forEach(att => {
-        const predicateText = (att.predicate?.label || att.predicate?.data || '').toLowerCase();
-        const objectText = (att.object?.label || att.object?.data || '').toLowerCase();
-        const combinedText = `${predicateText} ${objectText}`;
-
-        const isPositive = positiveKeywords.some(kw => combinedText.includes(kw));
-        const isNegative = negativeKeywords.some(kw => combinedText.includes(kw));
-
-        if (isPositive) positiveCount++;
-        if (isNegative) negativeCount++;
-
-        // Calculate breakdown scores based on predicate types
-        if (predicateText.includes('credib') || predicateText.includes('trust')) {
-          credibilitySum += isPositive ? 1 : (isNegative ? -0.5 : 0.5);
-        }
-        if (predicateText.includes('expert') || predicateText.includes('skill')) {
-          expertiseSum += isPositive ? 1 : (isNegative ? -0.5 : 0.5);
-        }
-        if (predicateText.includes('reliab') || predicateText.includes('verified')) {
-          reliabilitySum += isPositive ? 1 : (isNegative ? -0.5 : 0.5);
-        }
-      });
-
-      // Calculate overall score
-      const totalCount = attestations.length;
-      const baseScore = ((positiveCount - negativeCount * 2) / totalCount) * 100;
-      const normalizedScore = Math.min(Math.max(baseScore + 50, 0), 100);
-
+    if (relevantAttestations.length === 0) {
       return {
         address,
-        score: normalizedScore,
-        attestationCount: totalCount,
-        positiveAttestations: positiveCount,
-        negativeAttestations: negativeCount,
+        score: 0,
+        attestationCount: 0,
+        positiveAttestations: 0,
+        negativeAttestations: 0,
         lastUpdated: Date.now(),
         breakdown: {
-          credibility: Math.min(Math.max((credibilitySum / totalCount) * 100 + 50, 0), 100),
-          expertise: Math.min(Math.max((expertiseSum / totalCount) * 100 + 50, 0), 100),
-          reliability: Math.min(Math.max((reliabilitySum / totalCount) * 100 + 50, 0), 100),
-          reputation: normalizedScore
+          credibility: 0,
+          expertise: 0,
+          reliability: 0,
+          reputation: 0
         }
       };
-    } catch (error) {
-      console.error('Error calculating trust score:', error);
-      throw new Error(`Failed to calculate trust score: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+
+    // Analyze attestations for positive/negative signals
+    const positiveKeywords = ['expert', 'trusted', 'verified', 'credible', 'reliable'];
+    const negativeKeywords = ['scam', 'fraud', 'untrusted', 'suspicious'];
+
+    let positiveCount = 0;
+    let negativeCount = 0;
+
+    relevantAttestations.forEach(att => {
+      const text = `${att.predicate} ${att.object}`.toLowerCase();
+      const isPositive = positiveKeywords.some(kw => text.includes(kw));
+      const isNegative = negativeKeywords.some(kw => text.includes(kw));
+      
+      if (isPositive) positiveCount++;
+      if (isNegative) negativeCount++;
+    });
+
+    // Calculate score
+    const totalCount = relevantAttestations.length;
+    const baseScore = ((positiveCount - negativeCount * 2) / totalCount) * 100;
+    const normalizedScore = Math.min(Math.max(baseScore + 50, 0), 100);
+
+    return {
+      address,
+      score: normalizedScore,
+      attestationCount: totalCount,
+      positiveAttestations: positiveCount,
+      negativeAttestations: negativeCount,
+      lastUpdated: Date.now(),
+      breakdown: {
+        credibility: normalizedScore,
+        expertise: normalizedScore,
+        reliability: normalizedScore,
+        reputation: normalizedScore
+      }
+    };
   }
 
   /**
-   * Verify if an address has a specific credential/claim
+   * Verify credential
    */
   async verifyCredential(address: string, claim: string): Promise<VerificationResult> {
-    const normalizedAddress = address.toLowerCase();
-    const normalizedClaim = claim.toLowerCase();
+    const attestations = await this.getAttestations({ limit: 500 });
+    
+    const searchAddress = address.toLowerCase();
+    const searchClaim = claim.toLowerCase();
+    
+    const matching = attestations.filter(a => 
+      (a.subject.toLowerCase().includes(searchAddress) ||
+       a.creator.toLowerCase().includes(searchAddress) ||
+       a.object.toLowerCase().includes(searchAddress)) &&
+      (a.predicate.toLowerCase().includes(searchClaim) ||
+       a.object.toLowerCase().includes(searchClaim))
+    );
 
-    const query = `
-      query VerifyCredential($address: String!, $claim: String!) {
-        triples(
-          where: {
-            subject: {
-              wallet_id: { _ilike: $address }
-            }
-            predicate: {
-              _or: [
-                { label: { _ilike: $claim } },
-                { data: { _ilike: $claim } }
-              ]
-            }
-          }
-          limit: 50
-          order_by: { created_at: desc }
-        ) {
-          term_id
-          creator_id
-          created_at
-          subject {
-            wallet_id
-            label
-          }
-          predicate {
-            label
-            data
-          }
-          object {
-            label
-            data
-          }
-        }
-      }
-    `;
+    const verified = matching.length > 0;
+    const avgConfidence = verified 
+      ? matching.reduce((sum, a) => sum + a.confidence, 0) / matching.length 
+      : 0;
 
-    try {
-      const data = await this.client.request<{ triples: any[] }>(query, {
-        address: `%${normalizedAddress}%`,
-        claim: `%${normalizedClaim}%`
-      });
-
-      const triples = data.triples || [];
-      const verified = triples.length > 0;
-
-      // Convert to attestation format
-      const attestations: Attestation[] = triples.map(triple => ({
-        id: triple.term_id,
-        creator: triple.creator_id,
-        subject: triple.subject?.wallet_id || '',
-        predicate: triple.predicate?.label || triple.predicate?.data || '',
-        object: triple.object?.label || triple.object?.data || '',
-        timestamp: new Date(triple.created_at).getTime() / 1000,
-        confidence: 0.85,
-        metadata: {
-          subject_label: triple.subject?.label,
-          predicate_label: triple.predicate?.label,
-          object_label: triple.object?.label
-        }
-      }));
-
-      const avgConfidence = verified
-        ? attestations.reduce((sum, a) => sum + a.confidence, 0) / attestations.length
-        : 0;
-
-      return {
-        verified,
-        attestations,
-        confidence: avgConfidence,
-        message: verified
-          ? `Address ${address} has ${attestations.length} attestation(s) for "${claim}" with ${(avgConfidence * 100).toFixed(1)}% confidence`
-          : `No attestations found for "${claim}" on address ${address}`
-      };
-    } catch (error) {
-      console.error('Error verifying credential:', error);
-      throw new Error(`Failed to verify credential: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    return {
+      verified,
+      attestations: matching,
+      confidence: avgConfidence,
+      message: verified 
+        ? `Found ${matching.length} attestation(s) for "${claim}"`
+        : `No attestations found for "${claim}"`
+    };
   }
 
   /**
-   * Find trusted experts in a specific topic/domain
+   * Find trusted experts
    */
   async findTrustedExperts(topic: string, limit: number = 10): Promise<Expert[]> {
-    const normalizedTopic = topic.toLowerCase();
+    const attestations = await this.getAttestations({ limit: 500 });
+    
+    const topicLower = topic.toLowerCase();
+    const topicAttestations = attestations.filter(a => 
+      a.predicate.toLowerCase().includes(topicLower) ||
+      a.object.toLowerCase().includes(topicLower)
+    );
 
-    const query = `
-      query FindExperts($topic: String!, $limit: Int!) {
-        triples(
-          where: {
-            predicate: {
-              _or: [
-                { label: { _ilike: $topic } },
-                { data: { _ilike: $topic } }
-              ]
-            }
-          }
-          limit: 500
-          order_by: { created_at: desc }
-        ) {
-          subject {
-            wallet_id
-            label
-          }
-          predicate {
-            label
-            data
-          }
-          created_at
-        }
-      }
-    `;
+    const expertMap = new Map<string, number>();
+    topicAttestations.forEach(att => {
+      const count = expertMap.get(att.subject) || 0;
+      expertMap.set(att.subject, count + 1);
+    });
 
-    try {
-      const data = await this.client.request<{ triples: any[] }>(query, {
-        topic: `%${normalizedTopic}%`,
-        limit: limit * 10 // Get more to process
-      });
+    const experts: Expert[] = Array.from(expertMap.entries()).map(([address, count]) => ({
+      address,
+      trustScore: Math.min(50 + count * 10, 100),
+      attestationCount: count,
+      specializations: [topic],
+      recentActivity: Date.now()
+    }));
 
-      const triples = data.triples || [];
-
-      // Group by subject wallet_id
-      const expertMap = new Map<string, { count: number; lastActivity: number }>();
-
-      triples.forEach(triple => {
-        const walletId = triple.subject?.wallet_id;
-        if (!walletId) return;
-
-        const existing = expertMap.get(walletId) || { count: 0, lastActivity: 0 };
-        const timestamp = new Date(triple.created_at).getTime();
-
-        expertMap.set(walletId, {
-          count: existing.count + 1,
-          lastActivity: Math.max(existing.lastActivity, timestamp)
-        });
-      });
-
-      // Convert to Expert array and sort by attestation count
-      const experts: Expert[] = Array.from(expertMap.entries()).map(([address, data]) => ({
-        address,
-        trustScore: Math.min(50 + data.count * 10, 100), // Simple score based on attestation count
-        attestationCount: data.count,
-        specializations: [topic],
-        recentActivity: data.lastActivity / 1000 // Convert to seconds
-      }));
-
-      return experts
-        .sort((a, b) => b.attestationCount - a.attestationCount)
-        .slice(0, limit);
-    } catch (error) {
-      console.error('Error finding experts:', error);
-      throw new Error(`Failed to find experts: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    return experts
+      .sort((a, b) => b.attestationCount - a.attestationCount)
+      .slice(0, limit);
   }
 }
 
-// Export singleton instance
 export const intuitionClient = new IntuitionClient();
