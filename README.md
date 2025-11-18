@@ -138,6 +138,38 @@ vercel --prod
 - Expert discovery systems
 - Decentralized identity verification
 
+## Trust Score Algorithm
+
+### Current Implementation (MVP)
+
+The trust score calculation uses:
+
+- **Predicate Weighting**: Hardcoded weights for common predicates (verified=1.5x, trusted=1.3x, expert=1.2x)
+- **Normalization**: Scores normalized as percentage of total attestations
+- **Positive/Negative Signals**: Tracks both endorsements and warnings
+
+### Future Enhancements
+
+**Transitive Trust Computation**
+- Implement relative trust scores using graph traversal
+- Integration with [EAS Transitive Trust SDK](https://github.com/ethereum-attestation-service/transitive-trust-sdk)
+- Read more: [Transitive Trust Model](https://mirror.xyz/0xeee68aECeB4A9e9f328a46c39F50d83fA0239cDF)
+
+**Graph Indexer**
+- Current GraphQL limitations prevent deep graph traversal
+- Future: Spark-based indexer for full trust graph analysis
+- Enable computation of network effects and trust propagation
+
+**Governance-Based Weights**
+- Move from hardcoded to community-governed predicate weights
+- Implement whitelist of high-quality predicates
+- Dynamic weight adjustment based on network consensus
+
+**Minimum Stake Threshold**
+- Filter attestations below minimum TRUST token stake
+- Configurable threshold (currently MVP without filtering)
+- Normalize by user's total position rather than absolute stake
+
 ## Contributing
 
 This project was built for the Intuition Ecosystem Grant program.

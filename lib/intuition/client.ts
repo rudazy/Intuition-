@@ -86,11 +86,11 @@ export class IntuitionClient {
    */
   async getTrustScore(address: string): Promise<TrustScore> {
     const attestations = await this.getAttestations({ limit: 1000 });
-    
+
     // Search for address in subject, object (case-insensitive, partial match)
     const searchTerm = address.toLowerCase();
     const relevantAttestations = attestations.filter(a => {
-      const subjectMatch = a.subject.toLowerCase().includes(searchTerm) || 
+      const subjectMatch = a.subject.toLowerCase().includes(searchTerm) ||
                           a.creator.toLowerCase().includes(searchTerm);
       const objectMatch = a.object.toLowerCase().includes(searchTerm);
       return subjectMatch || objectMatch;
@@ -113,39 +113,65 @@ export class IntuitionClient {
       };
     }
 
-    // Analyze attestations for positive/negative signals
-    const positiveKeywords = ['expert', 'trusted', 'verified', 'credible', 'reliable'];
-    const negativeKeywords = ['scam', 'fraud', 'untrusted', 'suspicious'];
+    // Predicate weighting system (MVP: hardcoded weights)
+    const predicateWeights: Record<string, number> = {
+      'verified': 1.5,
+      'trusted': 1.3,
+      'expert': 1.2,
+      'credible': 1.2,
+      'reliable': 1.1,
+      'endorsed': 1.1,
+      'scam': -2.0,
+      'fraud': -2.0,
+      'suspicious': -1.5,
+      'untrusted': -1.3
+    };
 
+    let weightedScore = 0;
     let positiveCount = 0;
     let negativeCount = 0;
+    let totalWeight = 0;
 
     relevantAttestations.forEach(att => {
-      const text = `${att.predicate} ${att.object}`.toLowerCase();
-      const isPositive = positiveKeywords.some(kw => text.includes(kw));
-      const isNegative = negativeKeywords.some(kw => text.includes(kw));
-      
-      if (isPositive) positiveCount++;
-      if (isNegative) negativeCount++;
+      const predicateText = att.predicate.toLowerCase();
+      let weight = 1.0; // Default weight
+
+      // Find matching predicate weight
+      for (const [keyword, multiplier] of Object.entries(predicateWeights)) {
+        if (predicateText.includes(keyword)) {
+          weight = multiplier;
+          break;
+        }
+      }
+
+      // Apply weight
+      weightedScore += weight;
+      totalWeight += Math.abs(weight);
+
+      if (weight > 0) positiveCount++;
+      if (weight < 0) negativeCount++;
     });
 
-    // Calculate score
-    const totalCount = relevantAttestations.length;
-    const baseScore = ((positiveCount - negativeCount * 2) / totalCount) * 100;
-    const normalizedScore = Math.min(Math.max(baseScore + 50, 0), 100);
+    // Normalize score as percentage
+    const totalAttestations = attestations.length;
+    const normalizedScore = totalAttestations > 0
+      ? ((relevantAttestations.length / totalAttestations) * weightedScore * 10)
+      : 0;
+
+    const finalScore = Math.min(Math.max(normalizedScore, 0), 100);
 
     return {
       address,
-      score: normalizedScore,
-      attestationCount: totalCount,
+      score: finalScore,
+      attestationCount: relevantAttestations.length,
       positiveAttestations: positiveCount,
       negativeAttestations: negativeCount,
       lastUpdated: Date.now(),
       breakdown: {
-        credibility: normalizedScore,
-        expertise: normalizedScore,
-        reliability: normalizedScore,
-        reputation: normalizedScore
+        credibility: finalScore,
+        expertise: finalScore,
+        reliability: finalScore,
+        reputation: finalScore
       }
     };
   }
