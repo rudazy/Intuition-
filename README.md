@@ -36,7 +36,7 @@ npm install
 
 Create a `.env.local` file:
 ```env
-NEXT_PUBLIC_INTUITION_GRAPH_URL=https://testnet.intuition.sh/v1/graphql
+NEXT_PUBLIC_INTUITION_GRAPH_URL=https://mainnet.intuition.sh/v1/graphql
 NEXT_PUBLIC_CHAIN_ID=1155
 NEXT_PUBLIC_RPC_URL=https://rpc.intuition.systems/http
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -104,9 +104,9 @@ POST /api/mcp
 - **Chain ID**: 1155 (Intuition Mainnet)
 - **RPC**: https://rpc.intuition.systems/http
 - **Explorer**: https://explorer.intuition.systems
-- **GraphQL**: https://testnet.intuition.sh/v1/graphql (Testnet data)
+- **GraphQL**: https://mainnet.intuition.sh/v1/graphql (Mainnet data)
 
-**Note**: The GraphQL API currently indexes testnet attestation data. The blockchain operates on mainnet (Chain 1155), but attestation queries return testnet results.
+**Note**: The GraphQL API indexes mainnet attestation data. The blockchain operates on mainnet (Chain 1155), and attestation queries return mainnet results.
 
 ## Project Structure
 ```

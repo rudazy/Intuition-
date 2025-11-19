@@ -235,10 +235,10 @@ export default function DashboardPage() {
                 <CardTitle>Query Tools</CardTitle>
                 <CardDescription>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-semibold">
-                      ⚡ Testnet Data
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-semibold">
+                      ⚡ Mainnet Data
                     </span>
-                    <span className="text-gray-600">Connected to Intuition Testnet</span>
+                    <span className="text-gray-600">Connected to Intuition Mainnet</span>
                   </div>
                 </CardDescription>
               </CardHeader>
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                         onChange={(e) => setAddress(e.target.value)}
                       />
                       <div className="text-xs text-gray-500">
-                        💡 <strong>Note:</strong> ENS names resolve to mainnet addresses, but trust scores are calculated from <strong>testnet attestations</strong>
+                        💡 <strong>Note:</strong> ENS names resolve to mainnet addresses, and trust scores are calculated from <strong>mainnet attestations</strong>
                       </div>
                       {address && (
                         <div className="mt-2 text-xs">
@@ -290,15 +290,23 @@ export default function DashboardPage() {
                     </Button>
 
                     <div className="border-t pt-4 mt-4">
-                      <p className="text-sm font-medium mb-2">Try These Testnet Examples:</p>
+                      <p className="text-sm font-medium mb-2">Try These Mainnet Examples:</p>
                       <div className="grid grid-cols-1 gap-2">
                         <button
-                          onClick={() => setAddress('0x6A8055bA7a0f54D1b145F927E517522B235963F6')}
+                          onClick={() => setAddress('0xBb285b543C96C927FC320Fb28524899C2C90806C')}
                           className="text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border"
                           type="button"
                         >
-                          <div className="font-mono text-xs">0x6A80...63F6</div>
-                          <div className="text-xs text-gray-500">Active testnet address</div>
+                          <div className="font-mono text-xs">0xBb28...806C</div>
+                          <div className="text-xs text-gray-500">Active creator with many attestations</div>
+                        </button>
+                        <button
+                          onClick={() => setAddress('0x4D4Ec2EC39ce77f09Ca25502536AfDb1a88d8375')}
+                          className="text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border"
+                          type="button"
+                        >
+                          <div className="font-mono text-xs">0x4D4E...8375</div>
+                          <div className="text-xs text-gray-500">Intuition project (mainnet data)</div>
                         </button>
                         <button
                           onClick={() => setAddress('vitalik.eth')}
@@ -306,7 +314,7 @@ export default function DashboardPage() {
                           type="button"
                         >
                           <div className="font-mono text-xs">vitalik.eth</div>
-                          <div className="text-xs text-gray-500">ENS resolution demo (testnet data)</div>
+                          <div className="text-xs text-gray-500">ENS resolution demo</div>
                         </button>
                       </div>
                     </div>

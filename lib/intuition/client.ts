@@ -12,7 +12,7 @@ export class IntuitionClient {
   private apiUrl: string;
 
   constructor() {
-    this.apiUrl = process.env.NEXT_PUBLIC_INTUITION_GRAPH_URL || 'https://testnet.intuition.sh/v1/graphql';
+    this.apiUrl = process.env.NEXT_PUBLIC_INTUITION_GRAPH_URL || 'https://mainnet.intuition.sh/v1/graphql';
     this.client = new GraphQLClient(this.apiUrl, {
       headers: {
         'Content-Type': 'application/json',
