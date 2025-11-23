@@ -177,6 +177,7 @@ This project was built for the Intuition Ecosystem Grant program.
 ## Links
 
 - [Live Demo](https://www.intuitionmcp.xyz)
+- [Video demo](https://youtu.be/um_NLbhYy6s)
 - [Intuition Portal](https://portal.intuition.systems/)
 - [Intuition Documentation](https://docs.intuition.systems/)
 - [MCP Documentation](https://modelcontextprotocol.io/)
